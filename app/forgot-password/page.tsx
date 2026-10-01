@@ -1,3 +1,18 @@
 'use client'
-import {useState} from 'react';import {supabaseBrowser} from '@/lib/supabase';import Link from 'next/link';import Brand from '@/components/Brand'
-export default function Forgot(){const [email,setEmail]=useState(''),[done,setDone]=useState(false),[error,setError]=useState('');async function submit(e:any){e.preventDefault();const {error}=await supabaseBrowser().auth.resetPasswordForEmail(email,{redirectTo:`${location.origin}/reset-password`});if(error)setError('No pudimos enviar el enlace.');else setDone(true)}return <div className="public-page"><div className="form-card" style={{maxWidth:440,margin:'70px auto'}}><Brand/><h1>Recuperar contraseña</h1>{done?<><p>Si el correo existe, recibirás un enlace para crear una nueva contraseña.</p><Link className="btn btn-secondary" href="/login">Volver al inicio de sesión</Link></>:<form onSubmit={submit}><div className="field"><label>Email</label><input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></div>{error&&<p className="error">{error}</p>}<button className="btn btn-primary" style={{width:'100%'}}>Enviar enlace</button></form>}</div></div>}
+
+import {useState} from 'react'
+import {supabaseBrowser} from '@/lib/supabase'
+import Link from 'next/link'
+import Brand from '@/components/Brand'
+
+export default function Forgot(){
+  const [email,setEmail]=useState(''),[done,setDone]=useState(false),[error,setError]=useState(''),[loading,setLoading]=useState(false)
+  async function submit(e:React.FormEvent){
+    e.preventDefault();setLoading(true);setError('')
+    const sb=supabaseBrowser()
+    if(!sb){setError('Falta configurar Supabase en .env.local.');setLoading(false);return}
+    try{const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:`${location.origin}/reset-password`});if(error)setError('No pudimos enviar el enlace.');else setDone(true)}catch{setError('No pudimos conectar con el servicio. Inténtalo nuevamente.')}
+    finally{setLoading(false)}
+  }
+  return <div className="public-page"><div className="form-card" style={{maxWidth:440,margin:'70px auto'}}><Brand/><h1>Recuperar contraseña</h1>{done?<><p>Si el correo existe, recibirás un enlace para crear una nueva contraseña.</p><Link className="btn btn-secondary" href="/login">Volver al inicio de sesión</Link></>:<form onSubmit={submit}><div className="field"><label>Email</label><input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></div>{error&&<p className="error">{error}</p>}<button className="btn btn-primary" style={{width:'100%'}} disabled={loading}>{loading?'Enviando…':'Enviar enlace'}</button></form>}</div></div>
+}

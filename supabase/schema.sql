@@ -15,6 +15,7 @@ create table if not exists public.loyalty_cards (
  primary_color text not null default '#147d5a', secondary_color text not null default '#e7f5ef', text_color text not null default '#ffffff', logo_url text,
  published boolean not null default false, status text not null default 'draft' check(status in ('draft','published','paused','archived')), created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
+create unique index if not exists one_published_card_per_restaurant on public.loyalty_cards(restaurant_id) where status='published';
 create table if not exists public.employees (
  id uuid primary key default gen_random_uuid(), restaurant_id uuid not null references public.restaurants(id) on delete cascade, user_id uuid not null references auth.users(id) on delete cascade, role text not null default 'employee' check(role in ('employee','manager')), active boolean not null default true, unique(restaurant_id,user_id)
 );
@@ -101,6 +102,7 @@ create policy "member redemptions" on public.reward_redemptions for all using(pu
 create or replace function public.add_stamp(p_customer_id uuid,p_card_id uuid,p_amount int default null) returns jsonb language plpgsql security definer set search_path=public as $$
 declare rid uuid; emp uuid; cc public.customer_cards; cyc public.loyalty_cycles; card public.loyalty_cards; n int; reward_id uuid;
 begin
+ if p_amount is not null and p_amount < 1 then raise exception 'INVALID_AMOUNT'; end if;
  select restaurant_id into rid from public.customers where id=p_customer_id and status='active';
  if rid is null or not public.is_restaurant_member(rid) then raise exception 'UNAUTHORIZED'; end if;
  select id into emp from public.employees where restaurant_id=rid and user_id=auth.uid() and active=true limit 1;
@@ -153,6 +155,8 @@ grant execute on function public.public_join_info(text) to anon,authenticated;
 create or replace function public.register_customer(p_slug text,p_name text,p_contact text) returns jsonb language plpgsql security definer set search_path=public as $$
 declare r public.restaurants; c public.loyalty_cards; cu public.customers; cc public.customer_cards;
 begin
+ if length(trim(coalesce(p_name,''))) < 2 or length(trim(p_name)) > 120 then raise exception 'INVALID_NAME'; end if;
+ if length(trim(coalesce(p_contact,''))) < 3 or length(trim(p_contact)) > 160 then raise exception 'INVALID_CONTACT'; end if;
  select * into r from public.restaurants where slug=p_slug and status='active';
  if r.id is null then raise exception 'RESTAURANT_NOT_FOUND'; end if;
  select * into c from public.loyalty_cards where restaurant_id=r.id and status='published' order by created_at desc limit 1;

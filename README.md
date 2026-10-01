@@ -18,6 +18,8 @@ MVP multi-restaurante para tarjetas digitales de sellos y recompensas.
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 5. Ejecuta `npm install` y `npm run dev`.
 
+Para validar una compilación de producción local usa `npm run build` y luego `npm run start`. Si las variables de Supabase aún no existen, las páginas públicas siguen disponibles y las pantallas que requieren datos muestran la configuración pendiente en lugar de romperse.
+
 ## Flujo MVP
 1. `/register` crea usuario y restaurante automáticamente mediante trigger.
 2. `/dashboard/card` crea y publica la tarjeta.
@@ -30,6 +32,10 @@ MVP multi-restaurante para tarjetas digitales de sellos y recompensas.
 
 ## Seguridad
 La separación por restaurante se aplica en PostgreSQL con RLS y las operaciones críticas se ejecutan mediante funciones `security definer` que vuelven a validar pertenencia, estado y permisos.
+
+Antes de publicar, configura también en Supabase la URL de redirección de autenticación para tu dominio de producción y ejecuta `supabase/schema.sql` completo. La aplicación valida en PostgreSQL los permisos, el restaurante, la tarjeta, el cliente y los importes antes de registrar operaciones.
+
+El alta de clientes no usa Supabase Auth ni envía correos: guarda el teléfono o email como contacto y genera la tarjeta directamente. El límite de correos de Supabase Auth aplica al registro y recuperación de cuentas de propietarios; para producción conviene configurar un SMTP propio en Supabase y no crear cuentas repetidas para probar.
 
 ## Fases futuras preparadas
 Wallet, NFC, push, múltiples sucursales, Stripe/suscripciones, campañas y analítica avanzada.
