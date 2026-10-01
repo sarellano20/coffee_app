@@ -1,0 +1,2 @@
+-- Demo data should be created from the authenticated app so ownership is tied to auth.users.
+-- Example values are intentionally omitted to avoid mixing demo records with real tenants.
